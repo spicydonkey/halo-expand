@@ -295,9 +295,9 @@ end
 configs.zone.lim_az=pi*[-1,1];
 configs.zone.lim_el=pi/4*[-1,1];
 
-configs.zone.n_az=80;
-configs.zone.n_el=20;
-configs.zone.alpha=pi/10;       % pi/10 half-cone angle
+configs.zone.n_az=160;
+configs.zone.n_el=40;
+configs.zone.alpha=pi/20;       % pi/10 half-cone angle
 
 % % DEBUG
 % configs.zone.n_az=20;
@@ -383,12 +383,13 @@ end
 
 %% VIS: Momentum distribution of polarisation
 figname='pol_kdist_vs_texp';
-h=figure('Name',figname,'Units','centimeters','Position',[0,0,12,38],'Renderer','opengl');
+h=figure('Name',figname,'Units','centimeters','Position',[0,0,13,38],'Renderer','opengl');
+
 for ii=1:nt
-% for ii=1
+% for ii=1:5
     subplot(nt,1,ii);
     
-    plotFlatMapWrappedRad(az_grid,el_grid,m_k_avg(:,:,ii),'rect','texturemap');
+    tmap=plotFlatMapWrappedRad(az_grid,el_grid,m_k_avg(:,:,ii),'rect','texturemap');
     
     ax=gca;
     axis tight;
@@ -433,9 +434,33 @@ for ii=1:nt
         end
     end
 end
+% locate colorbar to bottom
+%   NOTE: current axes is to the LAST (bottom) subplot)
+pos_bottom=ax.Position;
+% define colorbar dims relative to subplot axes
+cbar_width=pos_bottom(3);           
+cbar_height=pos_bottom(4)/6;         
+cbar_x=pos_bottom(1);
+cbar_y=pos_bottom(2)-2.5*cbar_height;
+pos_cbar=[cbar_x, cbar_y, cbar_width, cbar_height];
 
-% print via vecrast
-% vecrast(h,strcat(h.Name,'_',getdatetimestr),600,'bottom','pdf')
+cbar.Position=pos_cbar;
+cbar.AxisLocation='out';        % label outward
+
+% annotation
+AxesH = axes('Parent', h, ...
+  'Units', 'normalized', ...
+  'Position', [0, 0, 1, 1], ...
+  'Visible', 'off', ...
+  'XLim', [0, 1], ...
+  'YLim', [0, 1], ...
+  'NextPlot', 'add');
+text('parent',AxesH,'Units','normalized','Position',[0,0.5],...
+    'Rotation',-90,'String','time since collision',...
+    'FontSize',12,'HorizontalAlignment','center','VerticalAlignment','bottom');
+
+% to print:
+% print_vecrast(h,'exportType','svg');
 
 %% VIS: Polarisation vs. t-expansion
 col_nkdisp={'b','r','k','g'};
