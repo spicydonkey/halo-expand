@@ -285,9 +285,9 @@ end
 % TODO
 %   [x] momentum-spin resolved numbers
 %   [x] "momentum distribution" of polarisation
-%   [ ] check for any error in LOG - by signal stability
-%       [ ] plot time-series of polarisation at some region for each param
-%       [ ] label disp'd regions
+%   [x] check for any error in LOG - by signal stability
+%   [x] plot time-series of polarisation at some region for each param
+%   [x] label disp'd regions
 
 
 %%% configs
@@ -443,16 +443,24 @@ mrk_nkdisp={'o','^','s','d'};
 
 
 figname='pol_vs_texp';
-h=figure('Name',figname,'Units',config_fig.units,'Position',[0,0,8.6,5],...
+h=figure('Name',figname,'Units',config_fig.units,'Position',[0,0,8.6,6.5],...
     'Renderer',config_fig.rend);
 hold on;
 
+pleg=NaN(nkdisp,1);
 for ii=1:nkdisp
     tp=ploterr(1e3*t_exp,squeeze(m_k_avg(disp_iazel(ii,1),disp_iazel(ii,2),:)),...
         [],squeeze(m_k_std(disp_iazel(ii,1),disp_iazel(ii,2),:)),'or-');
     set(tp(1),'Color',col_nkdisp{ii},'MarkerFaceColor',colf_nkdisp{ii},'Marker',mrk_nkdisp{ii},...
         'MarkerSize',config_fig.mark_siz,'LineWidth',config_fig.line_wid);
     set(tp(2),'Color',col_nkdisp{ii},'LineWidth',config_fig.line_wid);
+    
+    taz=configs.zone.az(disp_iazel(ii,1));
+    tel=configs.zone.el(disp_iazel(ii,2));
+    tstr_azel=sprintf('%3.2g, %3.2g',rad2deg(taz),rad2deg(tel));
+    set(tp(1),'DisplayName',tstr_azel);
+    
+    pleg(ii)=tp(1);
 end
 
 ax=gca;
@@ -466,3 +474,8 @@ ylabel('polarisation');
 
 xlim([0,9]);
 ylim(1.1*[-1,1]);
+
+lgd=legend(pleg,'Location','SouthEast');
+legend boxoff
+lgd.Title.String='$\theta,\phi$ (deg)';
+uistack(lgd,'bottom')
