@@ -400,7 +400,8 @@ for ii=1:nt
     axis off;
     
     caxis([-1,1]);
-    colormap('parula');
+%     colormap('parula');       % discrete bands at the slope
+    colormap('magma');
     
     temp_str=sprintf('%0.2g %s',1e3*t_exp(ii),'ms');
     text(-210,0,temp_str,'Rotation',-90,'HorizontalAlignment','center',...
