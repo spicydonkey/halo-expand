@@ -280,23 +280,37 @@ end
 %%% END OF PREPROCESSING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% PRE-analysis
+% SAVE ORIGINAL 
+if ~exist('k_par_orig','var')
+    k_par_orig=k_par;
+end
+
+%%% 3D rotated orientation
+v_euler=[-pi/2,pi/4,0];             % proper euler angle
+invR=inv(euler2rotm2(v_euler));     % rotation matrix: xyz --> XYZ
+
+% transform to xyz coords
+k_par_xyz=cellfun(@(C) cellfun(@(zxy) zxy2xyz(zxy),C,'UniformOutput',false),...
+    k_par_orig,'UniformOutput',false);
+
+% transform to XYZ coords (rotated)
+k_par_XYZ=cellfun(@(C) cellfun(@(xyz) (invR*xyz')',C,'UniformOutput',false),...
+    k_par_xyz,'UniformOutput',false);
+
+% transform back to ZXY coords
+k_par=cellfun(@(C) cellfun(@(xyz) xyz2zxy(xyz),C,'UniformOutput',false),...
+    k_par_XYZ,'UniformOutput',false);
+
 
 %% ANALYSIS
-% TODO
-%   [x] momentum-spin resolved numbers
-%   [x] "momentum distribution" of polarisation
-%   [x] check for any error in LOG - by signal stability
-%   [x] plot time-series of polarisation at some region for each param
-%   [x] label disp'd regions
-
-
 %%% configs
 % momentum zones
 configs.zone.lim_az=pi*[-1,1];
-configs.zone.lim_el=pi/4*[-1,1];
+configs.zone.lim_el=pi/2*[-1,1];        % pi/4
 
 configs.zone.n_az=160;
-configs.zone.n_el=40;
+configs.zone.n_el=80;
 configs.zone.alpha=pi/20;       % pi/10 half-cone angle
 
 % % DEBUG
