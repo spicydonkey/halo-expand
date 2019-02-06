@@ -287,12 +287,18 @@ if ~exist('k_par_orig','var')
 end
 
 %%% 3D rotated orientation
-v_euler=[-pi/2,pi/4,0];             % proper euler angle
+v_euler=[pi/2,pi/4,0];             % proper euler angle
 invR=inv(euler2rotm2(v_euler));     % rotation matrix: xyz --> XYZ
+
+% transform to RH coords
+k_par_rh=cellfun(@(C) cellfun(@(xl) tzxy2RHtzxy(xl),C,'UniformOutput',false),...
+    k_par_orig,'UniformOutput',false);
+% k_par_rh=cellfun(@(C) cellfun(@(xl) tzxy2RHtzxy2(xl),C,'UniformOutput',false),...
+%     k_par_orig,'UniformOutput',false);
 
 % transform to xyz coords
 k_par_xyz=cellfun(@(C) cellfun(@(zxy) zxy2xyz(zxy),C,'UniformOutput',false),...
-    k_par_orig,'UniformOutput',false);
+    k_par_rh,'UniformOutput',false);
 
 % transform to XYZ coords (rotated)
 k_par_XYZ=cellfun(@(C) cellfun(@(xyz) (invR*xyz')',C,'UniformOutput',false),...
@@ -309,28 +315,20 @@ k_par=cellfun(@(C) cellfun(@(xyz) xyz2zxy(xyz),C,'UniformOutput',false),...
 configs.zone.lim_az=pi*[-1,1];
 configs.zone.lim_el=pi/2*[-1,1];        % pi/4
 
-configs.zone.n_az=160;
-configs.zone.n_el=80;
-configs.zone.alpha=pi/20;       % pi/10 half-cone angle
+% configs.zone.n_az=160;
+% configs.zone.n_el=80;
+% configs.zone.alpha=pi/20;       % pi/10 half-cone angle
 
 % % DEBUG
-% configs.zone.n_az=20;
-% configs.zone.n_el=5;
-% configs.zone.alpha=pi/4;
+configs.zone.n_az=20;
+configs.zone.n_el=10;
+configs.zone.alpha=pi/10;
 
 configs.zone.az=linspace(configs.zone.lim_az(1),configs.zone.lim_az(2),configs.zone.n_az+1);
 configs.zone.az=configs.zone.az(1:end-1);
 configs.zone.el=linspace(configs.zone.lim_el(1),configs.zone.lim_el(2),configs.zone.n_el);
 
 azel=configs.zone;
-
-% alpha=pi/10;         % half-cone angle
-% lim_az=[-pi,pi];    % no inversion symmetry
-% phi_max=pi/4;       
-% lim_el=[-phi_max,phi_max];
-% 
-% n_az=200;                	% equispaced bins
-% n_el=50;
 
 [az_grid,el_grid]=ndgrid(configs.zone.az,configs.zone.el);    % az-el grid
 n_zone=numel(az_grid);
