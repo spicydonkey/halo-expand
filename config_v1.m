@@ -24,7 +24,7 @@ configs.load.window{3}=[-35e-3,35e-3];      % Y [m]
 
 % halo
 configs.mf(1).mf=1;
-configs.mf(1).window={vz*[0.3822,0.3992],35e-3*[-1,1],35e-3*[-1,1]};
+configs.mf(1).window={vz*[0.3822,0.402],35e-3*[-1,1],35e-3*[-1,1]};
 configs.mf(1).p_bec0=[vz*0.3866,  -2.8e-3,    3.2e-3;
                    vz*0.3993,  -3.5e-3,    3.2e-3];
 configs.mf(1).r_bec0=5e-3;
@@ -46,3 +46,6 @@ configs.filt.z_cap=0.85;
 configs.filt2.r_crop=[0.9,1.1];
 configs.filt2.z_cap=0.75;
 
+
+% analysis
+configs.roi = 'all';       % 'halo', 'all'
