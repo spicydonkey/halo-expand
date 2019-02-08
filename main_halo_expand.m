@@ -206,7 +206,6 @@ zlabel('z');
 view([0,0]);
 
 
-
 %% k-space and distortion cancellation
 k_halo=zxy0_filt;       % initialise atoms in k-space (i.e. atoms lie on unit-sphere)
 v_ellip=cell(n_mf,1);
@@ -222,22 +221,6 @@ v_ellip=[v_ellip{:}];   % form as struct array
 scatter_halo(k_halo);
 
 
-%% transform raw spatial clouds
-k_all=cell(size(zxy0));
-for ii = 1:n_mf
-    tV = v_ellip(ii);       
-    k_all(:,ii) = cellfun(@(x) ellip2usph(x,tV.cent,tV.rad,tV.vaxis),zxy0(:,ii),...
-        'UniformOutput',false);
-end
-
-% VIS
-scatter_halo(k_all);
-
-%%% filter radially
-k_all_filt = cfilter_norm(k_all,configs.filt2.r_crop(1),configs.filt2.r_crop(2));
-
-% VIS
-scatter_halo(k_all_filt);
 
 
 %% filter post-processed data
@@ -264,15 +247,46 @@ end
 scatter_halo(k_halo_filt);
 
 
+%% transform raw spatial clouds
+k_all=cell(size(zxy0));
+for ii = 1:n_mf
+    tV = v_ellip(ii);       
+    k_all(:,ii) = cellfun(@(x) ellip2usph(x,tV.cent,tV.rad,tV.vaxis),zxy0(:,ii),...
+        'UniformOutput',false);
+end
+
+% VIS
+scatter_halo(k_all);
+
+%%% filter radially
+k_all_filt = cfilter_norm(k_all,configs.filt2.r_crop(1),configs.filt2.r_crop(2));
+
+% VIS
+scatter_halo(k_all_filt);
+
+
+%% select data to analyse
+if ~isfield(configs,'roi')
+    warning('Region to analyse has not been specified. Default: scattering halo "k_halo_filt".');
+    k_roi=k_halo_filt;
+elseif strcmp(configs.roi,'halo')
+    k_roi=k_halo_filt;
+elseif strcmp(configs.roi,'all')
+    k_roi=k_all_filt;
+else
+    error('Unrecognised region of interest to analyse.');
+end
+
+
 %% categorise data by exp-params
 k_par=cell(1,nparam);
 if nparam>1
     for ii=1:nparam
-        k_par{ii}=k_halo_filt(b_paramset(:,ii),:);      % get all halo data
+        k_par{ii}=k_roi(b_paramset(:,ii),:);      % get all halo data
         %from this param-set and store
     end
 else
-    k_par{1}=k_halo_filt;
+    k_par{1}=k_roi;
 end
 
 n_shot_par=shotSize(k_par);
@@ -415,16 +429,16 @@ figname='pol_kdist_vs_texp';
 h=figure('Name',figname,'Units','centimeters','Position',[0,0,13,38],'Renderer','opengl');
 
 for ii=1:nt
-% for ii=1:5
     subplot(nt,1,ii);
     
     tmap=plotFlatMapWrappedRad(az_grid,el_grid,m_k_avg(:,:,ii),'rect','texturemap');
+    
     
     ax=gca;
     axis tight;
     xlim([-180,180]);
     xticks(-180:90:180);
-    yticks(-45:45:45);
+    yticks(-90:45:90);
     xlabel('$\theta$ (deg)');
     ylabel('$\phi$ (deg)');
     axis off;
@@ -433,7 +447,10 @@ for ii=1:nt
 %     colormap('parula');       % discrete bands at the slope
     colormap('magma');
     
-    temp_str=sprintf('%0.2g %s',1e3*t_exp(ii),'ms');
+    ax.DataAspectRatio=[0.5 1 1];
+    
+%     temp_str=sprintf('%0.2g %s',1e3*t_exp(ii),'ms');
+    temp_str=sprintf('%0.2g',1e3*t_exp(ii));
     text(-210,0,temp_str,'Rotation',-90,'HorizontalAlignment','center',...
         'VerticalAlignment','middle','FontSize',12)
     
@@ -448,19 +465,31 @@ for ii=1:nt
         %%% manual ticks
         xlim0=get(ax,'XLim');
         ylim0=get(ax,'YLim');
-        text(mean(xlim0),max(ylim0)+30,'$\theta$ (deg)',...
-            'HorizontalAlignment','center','VerticalAlignment','middle','FontSize',10);
-        text(max(xlim0)+30,mean(ylim0),'$\phi$ (deg)',...
-                'HorizontalAlignment','center','VerticalAlignment','middle','FontSize',10,...
-                'Rotation',-90);
+
+        tick_xmax=-Inf;
+        tick_ymax=-Inf;
         for xx=xticks
-            text(xx,max(ylim0)+10,num2str(xx),...
-                'HorizontalAlignment','center','VerticalAlignment','middle','FontSize',10); 
+            tt=text(xx,1.05*max(ylim0),num2str(xx),...
+                'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',10); 
+            tymax=tt.Extent(2)+1.1*tt.Extent(4);
+            if tymax>tick_ymax
+                tick_ymax=tymax;
+            end
         end
         for yy=yticks
-            text(max(xlim0)+10,yy,num2str(yy),...
+            tt=text(1.05*max(xlim0),yy,num2str(yy),...
                 'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',10);
+            txmax=tt.Extent(1)+1.1*tt.Extent(3);
+            if txmax>tick_xmax
+                tick_xmax=txmax;
+            end
         end
+        
+        text_xlabel=text(mean(xlim0),tick_ymax,'$\theta$ (deg)',...
+            'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',10);
+        text_ylabel=text(tick_xmax,mean(ylim0),'$\phi$ (deg)',...
+            'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',10,...
+            'Rotation',-90);
     end
 end
 % locate colorbar to bottom
@@ -485,7 +514,7 @@ AxesH = axes('Parent', h, ...
   'YLim', [0, 1], ...
   'NextPlot', 'add');
 text('parent',AxesH,'Units','normalized','Position',[0,0.5],...
-    'Rotation',-90,'String','time since collision',...
+    'Rotation',-90,'String','time since collision (ms)',...
     'FontSize',12,'HorizontalAlignment','center','VerticalAlignment','bottom');
 
 % to print:
