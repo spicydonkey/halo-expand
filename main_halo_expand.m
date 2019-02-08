@@ -208,22 +208,36 @@ view([0,0]);
 
 
 %% k-space and distortion cancellation
-%%% unit spherise
 k_halo=zxy0_filt;       % initialise atoms in k-space (i.e. atoms lie on unit-sphere)
 v_ellip=cell(n_mf,1);
 
-for ii=1:n_mf
-    k_halo(:,ii)=cellfun(@(x) x/r_halo_avg(ii),k_halo(:,ii),'UniformOutput',false);
-end
-
-%%% ellipsoid fit to sphere
+% ellipsoid fit to sphere
 for ii=1:n_mf
     [k_halo(:,ii),v_ellip{ii}]=map2usph(k_halo(:,ii));
 end
+v_ellip=[v_ellip{:}];   % form as struct array
     
-% DEBUG
+
+% VIS
 scatter_halo(k_halo);
 
+
+%% transform raw spatial clouds
+k_all=cell(size(zxy0));
+for ii = 1:n_mf
+    tV = v_ellip(ii);       
+    k_all(:,ii) = cellfun(@(x) ellip2usph(x,tV.cent,tV.rad,tV.vaxis),zxy0(:,ii),...
+        'UniformOutput',false);
+end
+
+% VIS
+scatter_halo(k_all);
+
+%%% filter radially
+k_all_filt = cfilter_norm(k_all,configs.filt2.r_crop(1),configs.filt2.r_crop(2));
+
+% VIS
+scatter_halo(k_all_filt);
 
 
 %% filter post-processed data
@@ -287,14 +301,17 @@ if ~exist('k_par_orig','var')
 end
 
 %%% 3D rotated orientation
-v_euler=[pi/2,pi/4,0];             % proper euler angle
+% v_euler=[-pi/2,pi*3/4,-pi/2];             % proper euler angle
+% invR=inv(euler2rotm2(v_euler));     % rotation matrix: xyz --> XYZ
+
+v_euler=[0,0,0];                    % original coord
 invR=inv(euler2rotm2(v_euler));     % rotation matrix: xyz --> XYZ
 
 % transform to RH coords
-k_par_rh=cellfun(@(C) cellfun(@(xl) tzxy2RHtzxy(xl),C,'UniformOutput',false),...
-    k_par_orig,'UniformOutput',false);
-% k_par_rh=cellfun(@(C) cellfun(@(xl) tzxy2RHtzxy2(xl),C,'UniformOutput',false),...
-%     k_par_orig,'UniformOutput',false);
+% k_par_rh=cellfun(@(C) cellfun(@(xl) tzxy2RHtzxy(xl),C,'UniformOutput',false),...
+%     k_par_orig,'UniformOutput',false);    % z along g
+k_par_rh=cellfun(@(C) cellfun(@(xl) tzxy2RHtzxy2(xl),C,'UniformOutput',false),...
+    k_par_orig,'UniformOutput',false);      % EXP-coord sys (z against g)
 
 % transform to xyz coords
 k_par_xyz=cellfun(@(C) cellfun(@(zxy) zxy2xyz(zxy),C,'UniformOutput',false),...
@@ -315,14 +332,14 @@ k_par=cellfun(@(C) cellfun(@(xyz) xyz2zxy(xyz),C,'UniformOutput',false),...
 configs.zone.lim_az=pi*[-1,1];
 configs.zone.lim_el=pi/2*[-1,1];        % pi/4
 
-% configs.zone.n_az=160;
-% configs.zone.n_el=80;
-% configs.zone.alpha=pi/20;       % pi/10 half-cone angle
+configs.zone.n_az=120;
+configs.zone.n_el=60;
+configs.zone.alpha=pi/20;       % pi/10 half-cone angle
 
 % % DEBUG
-configs.zone.n_az=20;
-configs.zone.n_el=10;
-configs.zone.alpha=pi/10;
+% configs.zone.n_az=20;
+% configs.zone.n_el=10;
+% configs.zone.alpha=pi/10;
 
 configs.zone.az=linspace(configs.zone.lim_az(1),configs.zone.lim_az(2),configs.zone.n_az+1);
 configs.zone.az=configs.zone.az(1:end-1);
